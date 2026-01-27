@@ -247,7 +247,6 @@ export const ActivityTrendsChart = () => {
                                 cursor={{ strokeDasharray: '3 3', stroke: '#555' }}
                                 isAnimationActive={false}
                                 labelStyle={{ color: '#E8E8E8', fontWeight: 'bold', marginBottom: 4 }}
-                                trigger="click"
                             />
                             <Legend
                                 wrapperStyle={{ fontSize: 10, paddingTop: 10 }}
