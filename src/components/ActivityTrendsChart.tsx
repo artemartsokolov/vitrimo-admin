@@ -9,6 +9,9 @@ import {
     Tooltip,
     Legend,
     ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -205,6 +208,54 @@ export const ActivityTrendsChart = () => {
         staleTime: 30000
     });
 
+    // Device breakdown query
+    const { data: deviceData } = useQuery<{ name: string; value: number; color: string }[]>({
+        queryKey: ['device-breakdown'],
+        queryFn: async () => {
+            try {
+                const daysAgo = 14;
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - daysAgo);
+                const startDateStr = startDate.toISOString().split('T')[0];
+
+                const { data: pageViews, error } = await (supabase as any)
+                    .from('page_view_events')
+                    .select('user_agent')
+                    .gte('viewed_at', startDateStr)
+                    .or('user_id.is.null,user_id.neq.artemvitrimo@gmail.com');
+
+                if (error) {
+                    console.warn('Device breakdown query error:', error);
+                    return [];
+                }
+
+                const counts = { desktop: 0, mobile: 0, tablet: 0 };
+
+                (pageViews || []).forEach((pv: { user_agent?: string }) => {
+                    const ua = (pv.user_agent || '').toLowerCase();
+                    if (/ipad|tablet|playbook|silk/i.test(ua) || (/android/i.test(ua) && !/mobile/i.test(ua))) {
+                        counts.tablet++;
+                    } else if (/mobile|iphone|ipod|android.*mobile|blackberry|opera mini|iemobile/i.test(ua)) {
+                        counts.mobile++;
+                    } else {
+                        counts.desktop++;
+                    }
+                });
+
+                return [
+                    { name: 'Desktop', value: counts.desktop, color: '#3b82f6' },
+                    { name: 'Mobile', value: counts.mobile, color: '#10b981' },
+                    { name: 'Tablet', value: counts.tablet, color: '#f59e0b' },
+                ].filter(d => d.value > 0);
+            } catch (err) {
+                console.error('Device breakdown error:', err);
+                return [];
+            }
+        },
+        refetchInterval: 60000,
+        staleTime: 30000
+    });
+
     if (isLoading) {
         return (
             <Card className="rounded-lg border border-border p-4">
@@ -222,126 +273,190 @@ export const ActivityTrendsChart = () => {
     }
 
     return (
-        <Card className="rounded-lg border border-border">
-            <CardHeader className="py-3 px-4">
-                <CardTitle className="text-sm font-medium">Activity Trends (Last 14 Days)</CardTitle>
-            </CardHeader>
-            <CardContent className="pb-4 px-2 md:px-4">
-                <div className="h-[300px] md:h-[400px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#333333" />
-                            <XAxis
-                                dataKey="date"
-                                tick={{ fontSize: 10, fill: '#8B8B8B' }}
-                                tickLine={false}
-                                axisLine={{ stroke: '#333333' }}
-                            />
-                            <YAxis
-                                tick={{ fontSize: 10, fill: '#8B8B8B' }}
-                                tickLine={false}
-                                axisLine={{ stroke: '#333333' }}
-                                width={30}
-                            />
-                            <Tooltip
-                                contentStyle={{
-                                    fontSize: 12,
-                                    borderRadius: 8,
-                                    border: '1px solid #333333',
-                                    backgroundColor: '#202020',
-                                    color: '#E8E8E8',
-                                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.3)',
-                                    padding: '10px 14px'
-                                }}
-                                cursor={{ strokeDasharray: '3 3', stroke: '#555' }}
-                                isAnimationActive={false}
-                                labelStyle={{ color: '#E8E8E8', fontWeight: 'bold', marginBottom: 4 }}
-                                trigger={isTouchDevice ? 'click' : 'hover'}
-                            />
-                            <Legend
-                                wrapperStyle={{ fontSize: 10, paddingTop: 10 }}
-                                formatter={(value) => <span style={{ color: '#8B8B8B' }}>{value}</span>}
-                            />
+        <>
+            <Card className="rounded-lg border border-border">
+                <CardHeader className="py-3 px-4">
+                    <CardTitle className="text-sm font-medium">Activity Trends (Last 14 Days)</CardTitle>
+                </CardHeader>
+                <CardContent className="pb-4 px-2 md:px-4">
+                    <div className="h-[300px] md:h-[400px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#333333" />
+                                <XAxis
+                                    dataKey="date"
+                                    tick={{ fontSize: 10, fill: '#8B8B8B' }}
+                                    tickLine={false}
+                                    axisLine={{ stroke: '#333333' }}
+                                />
+                                <YAxis
+                                    tick={{ fontSize: 10, fill: '#8B8B8B' }}
+                                    tickLine={false}
+                                    axisLine={{ stroke: '#333333' }}
+                                    width={30}
+                                />
+                                <Tooltip
+                                    contentStyle={{
+                                        fontSize: 12,
+                                        borderRadius: 8,
+                                        border: '1px solid #333333',
+                                        backgroundColor: '#202020',
+                                        color: '#E8E8E8',
+                                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.3)',
+                                        padding: '10px 14px'
+                                    }}
+                                    cursor={{ strokeDasharray: '3 3', stroke: '#555' }}
+                                    isAnimationActive={false}
+                                    labelStyle={{ color: '#E8E8E8', fontWeight: 'bold', marginBottom: 4 }}
+                                    trigger={isTouchDevice ? 'click' : 'hover'}
+                                />
+                                <Legend
+                                    wrapperStyle={{ fontSize: 10, paddingTop: 10 }}
+                                    formatter={(value) => <span style={{ color: '#8B8B8B' }}>{value}</span>}
+                                />
 
-                            <Line
-                                type="monotone"
-                                dataKey="emailsSent"
-                                name="Emails Sent"
-                                stroke="#3b82f6"
-                                strokeWidth={2}
-                                dot={{ fill: '#3b82f6', strokeWidth: 0, r: 5 }}
-                                activeDot={{ r: 8, stroke: '#3b82f6', strokeWidth: 2 }}
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="totalViews"
-                                name="Total Views"
-                                stroke="#10b981"
-                                strokeWidth={2}
-                                dot={{ fill: '#10b981', strokeWidth: 0, r: 5 }}
-                                activeDot={{ r: 8, stroke: '#10b981', strokeWidth: 2 }}
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="uniqueViews"
-                                name="Unique Views"
-                                stroke="#06b6d4"
-                                strokeWidth={2}
-                                strokeDasharray="4 2"
-                                dot={{ fill: '#06b6d4', strokeWidth: 0, r: 3 }}
-                                activeDot={{ r: 5 }}
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="userProjects"
-                                name="User Projects"
-                                stroke="#f97316"
-                                strokeWidth={2}
-                                dot={{ fill: '#f97316', strokeWidth: 0, r: 3 }}
-                                activeDot={{ r: 5 }}
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="newLeads"
-                                name="New Leads"
-                                stroke="#8b5cf6"
-                                strokeWidth={2}
-                                dot={{ fill: '#8b5cf6', strokeWidth: 0, r: 3 }}
-                                activeDot={{ r: 5 }}
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="claimsClicked"
-                                name="Claims"
-                                stroke="#E1224D"
-                                strokeWidth={2}
-                                dot={{ fill: '#E1224D', strokeWidth: 0, r: 3 }}
-                                activeDot={{ r: 5 }}
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="conversionRate"
-                                name="Conversion %"
-                                stroke="#f59e0b"
-                                strokeWidth={2}
-                                strokeDasharray="5 5"
-                                dot={{ fill: '#f59e0b', strokeWidth: 0, r: 3 }}
-                                activeDot={{ r: 5 }}
-                            />
-                            <Line
-                                type="monotone"
-                                dataKey="registrations"
-                                name="Registrations"
-                                stroke="#E8E8E8"
-                                strokeWidth={2}
-                                strokeDasharray="5 5"
-                                dot={{ fill: '#E8E8E8', strokeWidth: 0, r: 3 }}
-                                activeDot={{ r: 5 }}
-                            />
-                        </LineChart>
-                    </ResponsiveContainer>
-                </div>
-            </CardContent>
-        </Card>
+                                <Line
+                                    type="monotone"
+                                    dataKey="emailsSent"
+                                    name="Emails Sent"
+                                    stroke="#3b82f6"
+                                    strokeWidth={2}
+                                    dot={{ fill: '#3b82f6', strokeWidth: 0, r: 5 }}
+                                    activeDot={{ r: 8, stroke: '#3b82f6', strokeWidth: 2 }}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="totalViews"
+                                    name="Total Views"
+                                    stroke="#10b981"
+                                    strokeWidth={2}
+                                    dot={{ fill: '#10b981', strokeWidth: 0, r: 5 }}
+                                    activeDot={{ r: 8, stroke: '#10b981', strokeWidth: 2 }}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="uniqueViews"
+                                    name="Unique Views"
+                                    stroke="#06b6d4"
+                                    strokeWidth={2}
+                                    strokeDasharray="4 2"
+                                    dot={{ fill: '#06b6d4', strokeWidth: 0, r: 3 }}
+                                    activeDot={{ r: 5 }}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="userProjects"
+                                    name="User Projects"
+                                    stroke="#f97316"
+                                    strokeWidth={2}
+                                    dot={{ fill: '#f97316', strokeWidth: 0, r: 3 }}
+                                    activeDot={{ r: 5 }}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="newLeads"
+                                    name="New Leads"
+                                    stroke="#8b5cf6"
+                                    strokeWidth={2}
+                                    dot={{ fill: '#8b5cf6', strokeWidth: 0, r: 3 }}
+                                    activeDot={{ r: 5 }}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="claimsClicked"
+                                    name="Claims"
+                                    stroke="#E1224D"
+                                    strokeWidth={2}
+                                    dot={{ fill: '#E1224D', strokeWidth: 0, r: 3 }}
+                                    activeDot={{ r: 5 }}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="conversionRate"
+                                    name="Conversion %"
+                                    stroke="#f59e0b"
+                                    strokeWidth={2}
+                                    strokeDasharray="5 5"
+                                    dot={{ fill: '#f59e0b', strokeWidth: 0, r: 3 }}
+                                    activeDot={{ r: 5 }}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="registrations"
+                                    name="Registrations"
+                                    stroke="#E8E8E8"
+                                    strokeWidth={2}
+                                    strokeDasharray="5 5"
+                                    dot={{ fill: '#E8E8E8', strokeWidth: 0, r: 3 }}
+                                    activeDot={{ r: 5 }}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Device Breakdown Donut Chart */}
+            {
+                deviceData && deviceData.length > 0 && (
+                    <Card className="rounded-lg border border-border mt-4">
+                        <CardHeader className="py-3 px-4">
+                            <CardTitle className="text-sm font-medium">Device Breakdown (Last 14 Days)</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pb-4 px-4">
+                            <div className="flex items-center gap-8">
+                                <div className="h-[180px] w-[180px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={deviceData}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={50}
+                                                outerRadius={80}
+                                                paddingAngle={2}
+                                                dataKey="value"
+                                            >
+                                                {deviceData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip
+                                                contentStyle={{
+                                                    fontSize: 12,
+                                                    borderRadius: 8,
+                                                    border: '1px solid #333333',
+                                                    backgroundColor: '#202020',
+                                                    color: '#E8E8E8',
+                                                }}
+                                                formatter={(value: number) => [`${value} views`, '']}
+                                            />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    {deviceData.map((device) => {
+                                        const total = deviceData.reduce((sum, d) => sum + d.value, 0);
+                                        const percent = total > 0 ? Math.round((device.value / total) * 100) : 0;
+                                        return (
+                                            <div key={device.name} className="flex items-center gap-3">
+                                                <div
+                                                    className="w-3 h-3 rounded-full"
+                                                    style={{ backgroundColor: device.color }}
+                                                />
+                                                <span className="text-sm text-foreground">{device.name}</span>
+                                                <span className="text-xs text-muted-foreground">
+                                                    {device.value} ({percent}%)
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )
+            }
+        </>
     );
 };
