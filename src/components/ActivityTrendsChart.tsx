@@ -54,10 +54,12 @@ export const ActivityTrendsChart = () => {
                 if (emailError) console.warn('Email history query error:', emailError);
 
                 // Fetch landing views with visitor_id for unique counting
+                // Exclude admin views (artemvitrimo@gmail.com)
                 const { data: pageViewData, error: viewsError } = await (supabase as any)
                     .from('page_view_events')
-                    .select('viewed_at, visitor_id, session_id')
-                    .gte('viewed_at', startDateStr);
+                    .select('viewed_at, visitor_id, session_id, user_id')
+                    .gte('viewed_at', startDateStr)
+                    .or('user_id.is.null,user_id.neq.artemvitrimo@gmail.com');
 
                 if (viewsError) console.warn('Page views query error:', viewsError);
                 console.log('pageViewData:', pageViewData?.length, 'records, sample:', pageViewData?.slice(0, 3));
