@@ -476,12 +476,75 @@ export const ActivityTrendsChart = () => {
                 </CardContent>
             </Card>
 
-            {/* Device Breakdown Donut Chart */}
-            {
-                deviceData && deviceData.length > 0 && (
-                    <Card className="rounded-lg border border-border mt-4">
+            {/* Breakdown Charts - Side by side on desktop */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                {/* Device Breakdown Donut Chart */}
+                {
+                    deviceData && deviceData.length > 0 && (
+                        <Card className="rounded-lg border border-border">
+                            <CardHeader className="py-3 px-4">
+                                <CardTitle className="text-sm font-medium">Device Breakdown (Last 14 Days)</CardTitle>
+                            </CardHeader>
+                            <CardContent className="pb-4 px-4">
+                                <div className="flex items-center gap-8">
+                                    <div className="h-[180px] w-[180px]">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie
+                                                    data={deviceData}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    innerRadius={50}
+                                                    outerRadius={80}
+                                                    paddingAngle={2}
+                                                    dataKey="value"
+                                                >
+                                                    {deviceData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip
+                                                    contentStyle={{
+                                                        fontSize: 12,
+                                                        borderRadius: 8,
+                                                        border: '1px solid #333333',
+                                                        backgroundColor: '#202020',
+                                                        color: '#E8E8E8',
+                                                    }}
+                                                    formatter={(value: number) => [`${value} views`, '']}
+                                                />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        {deviceData.map((device) => {
+                                            const total = deviceData.reduce((sum, d) => sum + d.value, 0);
+                                            const percent = total > 0 ? Math.round((device.value / total) * 100) : 0;
+                                            return (
+                                                <div key={device.name} className="flex items-center gap-3">
+                                                    <div
+                                                        className="w-3 h-3 rounded-full"
+                                                        style={{ backgroundColor: device.color }}
+                                                    />
+                                                    <span className="text-sm text-foreground">{device.name}</span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {device.value} ({percent}%)
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )
+                }
+
+                {/* Segment Breakdown Donut Chart */}
+                {segmentData && segmentData.length > 0 && (
+                    <Card className="rounded-lg border border-border">
                         <CardHeader className="py-3 px-4">
-                            <CardTitle className="text-sm font-medium">Device Breakdown (Last 14 Days)</CardTitle>
+                            <CardTitle className="text-sm font-medium">Lead Segment Breakdown (Last 14 Days)</CardTitle>
                         </CardHeader>
                         <CardContent className="pb-4 px-4">
                             <div className="flex items-center gap-8">
@@ -489,7 +552,7 @@ export const ActivityTrendsChart = () => {
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
                                             <Pie
-                                                data={deviceData}
+                                                data={segmentData}
                                                 cx="50%"
                                                 cy="50%"
                                                 innerRadius={50}
@@ -497,8 +560,8 @@ export const ActivityTrendsChart = () => {
                                                 paddingAngle={2}
                                                 dataKey="value"
                                             >
-                                                {deviceData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                {segmentData.map((entry, index) => (
+                                                    <Cell key={`segment-${index}`} fill={entry.color} />
                                                 ))}
                                             </Pie>
                                             <Tooltip
@@ -515,18 +578,18 @@ export const ActivityTrendsChart = () => {
                                     </ResponsiveContainer>
                                 </div>
                                 <div className="flex flex-col gap-2">
-                                    {deviceData.map((device) => {
-                                        const total = deviceData.reduce((sum, d) => sum + d.value, 0);
-                                        const percent = total > 0 ? Math.round((device.value / total) * 100) : 0;
+                                    {segmentData.map((segment) => {
+                                        const total = segmentData.reduce((sum, d) => sum + d.value, 0);
+                                        const percent = total > 0 ? Math.round((segment.value / total) * 100) : 0;
                                         return (
-                                            <div key={device.name} className="flex items-center gap-3">
+                                            <div key={segment.name} className="flex items-center gap-3">
                                                 <div
                                                     className="w-3 h-3 rounded-full"
-                                                    style={{ backgroundColor: device.color }}
+                                                    style={{ backgroundColor: segment.color }}
                                                 />
-                                                <span className="text-sm text-foreground">{device.name}</span>
+                                                <span className="text-sm text-foreground">{segment.name}</span>
                                                 <span className="text-xs text-muted-foreground">
-                                                    {device.value} ({percent}%)
+                                                    {segment.value} ({percent}%)
                                                 </span>
                                             </div>
                                         );
@@ -535,68 +598,8 @@ export const ActivityTrendsChart = () => {
                             </div>
                         </CardContent>
                     </Card>
-                )
-            }
-
-            {/* Segment Breakdown Donut Chart */}
-            {segmentData && segmentData.length > 0 && (
-                <Card className="rounded-lg border border-border mt-4">
-                    <CardHeader className="py-3 px-4">
-                        <CardTitle className="text-sm font-medium">Lead Segment Breakdown (Last 14 Days)</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pb-4 px-4">
-                        <div className="flex items-center gap-8">
-                            <div className="h-[180px] w-[180px]">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie
-                                            data={segmentData}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={50}
-                                            outerRadius={80}
-                                            paddingAngle={2}
-                                            dataKey="value"
-                                        >
-                                            {segmentData.map((entry, index) => (
-                                                <Cell key={`segment-${index}`} fill={entry.color} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip
-                                            contentStyle={{
-                                                fontSize: 12,
-                                                borderRadius: 8,
-                                                border: '1px solid #333333',
-                                                backgroundColor: '#202020',
-                                                color: '#E8E8E8',
-                                            }}
-                                            formatter={(value: number) => [`${value} views`, '']}
-                                        />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            </div>
-                            <div className="flex flex-col gap-2">
-                                {segmentData.map((segment) => {
-                                    const total = segmentData.reduce((sum, d) => sum + d.value, 0);
-                                    const percent = total > 0 ? Math.round((segment.value / total) * 100) : 0;
-                                    return (
-                                        <div key={segment.name} className="flex items-center gap-3">
-                                            <div
-                                                className="w-3 h-3 rounded-full"
-                                                style={{ backgroundColor: segment.color }}
-                                            />
-                                            <span className="text-sm text-foreground">{segment.name}</span>
-                                            <span className="text-xs text-muted-foreground">
-                                                {segment.value} ({percent}%)
-                                            </span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+                )}
+            </div>
         </>
     );
 };
