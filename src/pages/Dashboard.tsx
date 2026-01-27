@@ -3831,12 +3831,12 @@ const MarketingDemosTab = ({
   const StatusBadgeEmail = ({ status }: { status: string | null }) => {
     if (!status) return <span className="text-xs text-muted-foreground">—</span>;
     const styles: Record<string, string> = {
-      sent: 'bg-blue-50 text-blue-700',
-      opened: 'bg-emerald-50 text-emerald-700',
+      sent: 'bg-blue-500/15 text-blue-400',
+      opened: 'bg-emerald-500/15 text-emerald-400',
       unopened: 'bg-secondary text-muted-foreground',
-      spam: 'bg-red-50 text-red-700',
-      pending: 'bg-amber-50 text-amber-700',
-      failed: 'bg-red-50 text-red-700'
+      spam: 'bg-red-500/15 text-red-400',
+      pending: 'bg-amber-500/15 text-amber-400',
+      failed: 'bg-red-500/15 text-red-400'
     };
     const labels: Record<string, string> = {
       sent: 'Sent',
@@ -3846,7 +3846,7 @@ const MarketingDemosTab = ({
       pending: 'Pending',
       failed: 'Failed'
     };
-    return <Badge className={cn('text-[10px] px-2 py-0.5', styles[status])}>{labels[status]}</Badge>;
+    return <span className={cn('inline-block text-[9px] px-1.5 py-0.5 rounded font-medium', styles[status])}>{labels[status]}</span>;
   };
 
   const SegmentBadge = ({ segment }: { segment: string | null }) => {
@@ -4069,7 +4069,7 @@ const MarketingDemosTab = ({
                     <div className="flex items-center gap-1.5">
                       <span className="text-foreground truncate text-[11px]">{lp.addr_line1 || 'No address'}</span>
                       {(lp.property_status === 'Sold' || lp.payload?.listing_status === 'sold') && (
-                        <span className="text-[8px] px-1 py-0.5 rounded bg-violet-50 text-violet-600 font-medium">SOLD</span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-400 font-medium">SOLD</span>
                       )}
                     </div>
                     <span className="text-[10px] text-muted-foreground">${lp.asking_price?.toLocaleString() || '—'}</span>
