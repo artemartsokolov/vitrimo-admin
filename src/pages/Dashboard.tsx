@@ -199,7 +199,7 @@ const WindowStatusBadge = ({
   }, []);
 
   const countdown = formatCountdown(nextTimestamp ?? null, now);
-  const baseClasses = open ? 'bg-emerald-50 text-emerald-700' : 'bg-secondary text-muted-foreground';
+  const baseClasses = open ? 'bg-emerald-500/15 text-emerald-400' : 'bg-secondary text-muted-foreground';
   const statusText = open ? 'Open' : 'Closed';
   return (
     <Badge className={cn(baseClasses, "text-[10px] px-2 py-0.5")}>
@@ -2340,7 +2340,7 @@ const OutreachDashboard = () => {
                                 if (!isWorkDay) {
                                   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                                   return (
-                                    <div className="px-2 py-1 rounded text-[10px] font-medium bg-violet-50 text-violet-700">
+                                    <div className="px-2 py-1 rounded text-[10px] font-medium bg-violet-500/15 text-violet-400">
                                       Day off ({dayNames[todayDayOfWeek]})
                                     </div>
                                   );
@@ -2348,7 +2348,7 @@ const OutreachDashboard = () => {
 
                                 if (capReached) {
                                   return (
-                                    <div className="px-2 py-1 rounded text-[10px] font-medium bg-rose-50 text-rose-700">
+                                    <div className="px-2 py-1 rounded text-[10px] font-medium bg-rose-500/15 text-rose-400">
                                       Cap reached
                                     </div>
                                   );
@@ -2356,7 +2356,7 @@ const OutreachDashboard = () => {
 
                                 if (hasActiveQueue) {
                                   return (
-                                    <div className="px-2 py-1 rounded text-[10px] font-medium bg-blue-50 text-blue-700">
+                                    <div className="px-2 py-1 rounded text-[10px] font-medium bg-blue-500/15 text-blue-400">
                                       Sending...
                                     </div>
                                   );
@@ -2365,7 +2365,7 @@ const OutreachDashboard = () => {
                                 // Ready if there are tasks that match recipient timezone (even if sender window is "closed")
                                 if (hasReadyTasks && !cooldown) {
                                   return (
-                                    <div className="px-2 py-1 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700">
+                                    <div className="px-2 py-1 rounded text-[10px] font-medium bg-emerald-500/15 text-emerald-400">
                                       Ready
                                     </div>
                                   );
@@ -2374,7 +2374,7 @@ const OutreachDashboard = () => {
                                 // Waiting - no tasks ready or cooldown active
                                 const countdown = getCountdown();
                                 return (
-                                  <div className="px-2 py-1 rounded text-[10px] font-medium bg-amber-50 text-amber-700">
+                                  <div className="px-2 py-1 rounded text-[10px] font-medium bg-amber-500/15 text-amber-400">
                                     Waiting{countdown ? ` · ${countdown}` : ''}
                                   </div>
                                 );
@@ -2395,9 +2395,9 @@ const OutreachDashboard = () => {
                             <>
                               {/* Reasons Bar (show if there are any reasons, regardless of canSend status) */}
                               {reasons.length > 0 && (
-                                <div className="px-4 py-2 bg-amber-50/50 border-b border-amber-100 flex items-start gap-2">
-                                  <AlertCircle className="h-3.5 w-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
-                                  <div className="text-[10px] text-amber-700 leading-relaxed">
+                                <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 flex items-start gap-2">
+                                  <AlertCircle className="h-3.5 w-3.5 text-amber-400 mt-0.5 flex-shrink-0" />
+                                  <div className="text-[10px] text-amber-400 leading-relaxed">
                                     {reasons.slice(0, 3).join(' • ')}
                                   </div>
                                 </div>
