@@ -2410,8 +2410,8 @@ const OutreachDashboard = () => {
                               )}
 
                               {/* Settings Row - Notion Style */}
-                              <div className="px-5 py-4">
-                                <div className="flex gap-8">
+                              <div className="px-5 py-4 overflow-x-auto">
+                                <div className="flex flex-wrap gap-6 min-w-0">
                                   {/* Cap & Gap - Left Column */}
                                   <div className="flex gap-6 flex-shrink-0">
                                     {/* Cap */}
@@ -2502,9 +2502,9 @@ const OutreachDashboard = () => {
                                   </div>
 
                                   {/* Windows - Right Section */}
-                                  <div className="flex-1">
+                                  <div className="flex-1 min-w-[400px]">
                                     <label className="block text-[11px] text-muted-foreground mb-2">Schedule Windows</label>
-                                    <div className="flex gap-4">
+                                    <div className="flex flex-wrap gap-3">
                                       {[
                                         { key: 'w1', label: 'Morning' },
                                         { key: 'w2', label: 'Afternoon' },
@@ -2538,7 +2538,7 @@ const OutreachDashboard = () => {
                                           <div
                                             key={win.key}
                                             className={cn(
-                                              "flex-1 p-3 rounded-lg border transition-all",
+                                              "min-w-[160px] flex-1 p-3 rounded-lg border transition-all",
                                               hasWindow
                                                 ? "bg-card border-border hover:border-muted-foreground shadow-sm"
                                                 : "bg-secondary border-border"
