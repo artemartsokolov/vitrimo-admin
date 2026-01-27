@@ -2010,11 +2010,21 @@ const OutreachDashboard = () => {
     setLoginError('');
     setLoginLoading(true);
 
-    const fn = loginMode === 'signin' ? signInWithEmail : signUpWithEmail;
-    const { error } = await fn(loginEmail, loginPassword);
+    try {
+      console.log('[AUTH] Attempting', loginMode, 'with', loginEmail);
+      const fn = loginMode === 'signin' ? signInWithEmail : signUpWithEmail;
+      const { error } = await fn(loginEmail, loginPassword);
 
-    if (error) {
-      setLoginError(error.message);
+      console.log('[AUTH] Result:', error ? error.message : 'success');
+
+      if (error) {
+        setLoginError(error.message);
+      } else if (loginMode === 'signup') {
+        setLoginError('Check your email for confirmation link!');
+      }
+    } catch (err: any) {
+      console.error('[AUTH] Exception:', err);
+      setLoginError(err.message || 'Unknown error');
     }
     setLoginLoading(false);
   };
