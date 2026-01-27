@@ -3852,10 +3852,10 @@ const MarketingDemosTab = ({
   const SegmentBadge = ({ segment }: { segment: string | null }) => {
     if (!segment) return null;
     const styles: Record<string, string> = {
-      early_career: 'bg-blue-50 text-blue-700 border-blue-100',
-      mid_career: 'bg-purple-50 text-purple-700 border-purple-100',
-      senior: 'bg-amber-50 text-amber-700 border-amber-100',
-      dinosaur: 'bg-emerald-50 text-emerald-700 border-emerald-100'
+      early_career: 'bg-blue-500/15 text-blue-400',
+      mid_career: 'bg-violet-500/15 text-violet-400',
+      senior: 'bg-orange-500/15 text-orange-400',
+      dinosaur: 'bg-emerald-500/15 text-emerald-400'
     };
     const labels: Record<string, string> = {
       early_career: 'Early Career',
@@ -3864,9 +3864,9 @@ const MarketingDemosTab = ({
       dinosaur: 'Top Producer'
     };
     return (
-      <Badge variant="outline" className={cn('text-[8px] px-1 h-3.5 mt-0.5 font-normal capitalize', styles[segment] || 'bg-secondary text-muted-foreground border-border')}>
+      <span className={cn('inline-block text-[9px] px-1.5 py-0.5 rounded font-medium whitespace-nowrap', styles[segment] || 'bg-secondary text-muted-foreground')}>
         {labels[segment] || segment.replace('_', ' ')}
-      </Badge>
+      </span>
     );
   };
 
