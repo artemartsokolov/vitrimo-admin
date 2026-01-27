@@ -256,6 +256,86 @@ export const ActivityTrendsChart = () => {
         staleTime: 30000
     });
 
+    // Segment breakdown query (dinosaurs, newcomers, etc.)
+    const segmentColors: Record<string, string> = {
+        dinosaur: '#ef4444',      // red
+        veteran: '#f97316',       // orange  
+        established: '#eab308',   // yellow
+        growing: '#22c55e',       // green
+        newcomer: '#3b82f6',      // blue
+        unknown: '#6b7280',       // gray
+    };
+
+    const { data: segmentData } = useQuery<{ name: string; value: number; color: string }[]>({
+        queryKey: ['segment-breakdown'],
+        queryFn: async () => {
+            try {
+                const daysAgo = 14;
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - daysAgo);
+                const startDateStr = startDate.toISOString().split('T')[0];
+
+                // Get page views with landing_id
+                const { data: pageViews, error: pvError } = await (supabase as any)
+                    .from('page_view_events')
+                    .select('landing_id')
+                    .gte('viewed_at', startDateStr)
+                    .or('user_id.is.null,user_id.neq.artemvitrimo@gmail.com');
+
+                if (pvError) {
+                    console.warn('Segment breakdown - page views error:', pvError);
+                    return [];
+                }
+
+                // Get unique landing_ids
+                const landingIds = [...new Set((pageViews || []).map((pv: any) => pv.landing_id).filter(Boolean))];
+
+                if (landingIds.length === 0) return [];
+
+                // Get cold_leads with their experience_segment for these landings
+                const { data: leads, error: leadsError } = await (supabase as any)
+                    .from('cold_leads')
+                    .select('landing_project_id, experience_segment')
+                    .in('landing_project_id', landingIds);
+
+                if (leadsError) {
+                    console.warn('Segment breakdown - leads error:', leadsError);
+                    return [];
+                }
+
+                // Create mapping: landing_id -> segment
+                const landingToSegment: Record<string, string> = {};
+                (leads || []).forEach((lead: any) => {
+                    if (lead.landing_project_id) {
+                        landingToSegment[lead.landing_project_id] = lead.experience_segment || 'unknown';
+                    }
+                });
+
+                // Count views per segment
+                const counts: Record<string, number> = {};
+                (pageViews || []).forEach((pv: any) => {
+                    const segment = landingToSegment[pv.landing_id] || 'unknown';
+                    counts[segment] = (counts[segment] || 0) + 1;
+                });
+
+                // Convert to chart data
+                return Object.entries(counts)
+                    .map(([name, value]) => ({
+                        name: name.charAt(0).toUpperCase() + name.slice(1),
+                        value,
+                        color: segmentColors[name] || '#6b7280'
+                    }))
+                    .filter(d => d.value > 0)
+                    .sort((a, b) => b.value - a.value);
+            } catch (err) {
+                console.error('Segment breakdown error:', err);
+                return [];
+            }
+        },
+        refetchInterval: 60000,
+        staleTime: 30000
+    });
+
     if (isLoading) {
         return (
             <Card className="rounded-lg border border-border p-4">
@@ -457,6 +537,66 @@ export const ActivityTrendsChart = () => {
                     </Card>
                 )
             }
+
+            {/* Segment Breakdown Donut Chart */}
+            {segmentData && segmentData.length > 0 && (
+                <Card className="rounded-lg border border-border mt-4">
+                    <CardHeader className="py-3 px-4">
+                        <CardTitle className="text-sm font-medium">Lead Segment Breakdown (Last 14 Days)</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pb-4 px-4">
+                        <div className="flex items-center gap-8">
+                            <div className="h-[180px] w-[180px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={segmentData}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={50}
+                                            outerRadius={80}
+                                            paddingAngle={2}
+                                            dataKey="value"
+                                        >
+                                            {segmentData.map((entry, index) => (
+                                                <Cell key={`segment-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip
+                                            contentStyle={{
+                                                fontSize: 12,
+                                                borderRadius: 8,
+                                                border: '1px solid #333333',
+                                                backgroundColor: '#202020',
+                                                color: '#E8E8E8',
+                                            }}
+                                            formatter={(value: number) => [`${value} views`, '']}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                {segmentData.map((segment) => {
+                                    const total = segmentData.reduce((sum, d) => sum + d.value, 0);
+                                    const percent = total > 0 ? Math.round((segment.value / total) * 100) : 0;
+                                    return (
+                                        <div key={segment.name} className="flex items-center gap-3">
+                                            <div
+                                                className="w-3 h-3 rounded-full"
+                                                style={{ backgroundColor: segment.color }}
+                                            />
+                                            <span className="text-sm text-foreground">{segment.name}</span>
+                                            <span className="text-xs text-muted-foreground">
+                                                {segment.value} ({percent}%)
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
         </>
     );
 };
