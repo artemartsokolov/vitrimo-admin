@@ -25,7 +25,6 @@ type SenderStats = {
   sent_today: number;
   sent_total: number;
   remaining_today: number;
-  sent_total: number;
   sent_total_e1: number;
   sent_total_e2: number;
   sent_total_e3: number;
@@ -3044,9 +3043,9 @@ const PromptsTab = () => {
                   prompt_text: selectedPrompt.prompt_text,
                   description: selectedPrompt.description
                 })}
-                disabled={updatePrompt.isLoading}
+                disabled={updatePrompt.isPending}
               >
-                {updatePrompt.isLoading ? 'Saving...' : 'Save Changes'}
+                {updatePrompt.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
 
@@ -3469,7 +3468,7 @@ const MarketingDemosTab = ({
 
         // Create projects map
         const projectsMap = new Map<string, any>();
-        (projects || []).forEach(p => projectsMap.set(p.id, p));
+        (projects || []).forEach((p: any) => projectsMap.set(p.id, p));
 
         // Build result - merge lead data into project structure
         const result = leadsTyped
@@ -3532,7 +3531,7 @@ const MarketingDemosTab = ({
         }
 
         // Get cold_leads for these projects
-        const projectIds = projects.map(p => p.id);
+        const projectIds = projects.map((p: any) => p.id);
         const { data: leads } = await supabase
           .from('cold_leads')
           .select('*')
@@ -3545,7 +3544,7 @@ const MarketingDemosTab = ({
           leadsMap.set(lead.landing_project_id, arr);
         });
 
-        const result = projects.map(p => ({
+        const result = projects.map((p: any) => ({
           ...p,
           cold_leads: leadsMap.get(p.id) || []
         }));
@@ -3571,7 +3570,7 @@ const MarketingDemosTab = ({
       }
 
       // Get cold_leads for these projects
-      const projectIds = projects.map(p => p.id);
+      const projectIds = projects.map((p: any) => p.id);
       const { data: leads, error: leadsError } = await supabase
         .from('cold_leads')
         .select('*')
@@ -3589,7 +3588,7 @@ const MarketingDemosTab = ({
         leadsMap.set(lead.landing_project_id, arr);
       });
 
-      const result = projects.map(p => ({
+      const result = projects.map((p: any) => ({
         ...p,
         cold_leads: leadsMap.get(p.id) || []
       }));
@@ -3707,7 +3706,7 @@ const MarketingDemosTab = ({
 
     // Filter by segment
     if (segmentFilter && segmentFilter !== 'all') {
-      items = items.filter(lp => {
+      items = items.filter((lp: any) => {
         const lead = lp.cold_leads?.[0];
         return lead?.experience_segment === segmentFilter;
       });
@@ -3716,7 +3715,7 @@ const MarketingDemosTab = ({
     // Filter by search term
     if (searchTerm) {
       const lowerSearch = searchTerm.toLowerCase();
-      items = items.filter(lp =>
+      items = items.filter((lp: any) =>
         lp.agent_name?.toLowerCase().includes(lowerSearch) ||
         lp.agent_email?.toLowerCase().includes(lowerSearch) ||
         lp.addr_line1?.toLowerCase().includes(lowerSearch)
@@ -3851,7 +3850,7 @@ const MarketingDemosTab = ({
             placeholder="Search..."
             className="pl-7 h-7 text-xs rounded-md border-border bg-secondary focus:bg-secondary"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e: any) => setSearchTerm(e.target.value)}
           />
         </div>
       </div>
@@ -3871,9 +3870,9 @@ const MarketingDemosTab = ({
                 className="h-7 text-xs border-rose-200 text-rose-700 hover:bg-rose-100"
                 onClick={() => {
                   const items = filteredData
-                    .filter(lp => selectedRows.has(lp.id))
-                    .map(lp => ({ projectId: lp.id, leadId: (lp.cold_leads?.[0] as any)?.id }));
-                  const leadIds = items.map(i => i.leadId).filter(Boolean) as string[];
+                    .filter((lp: any) => selectedRows.has(lp.id))
+                    .map((lp: any) => ({ projectId: lp.id, leadId: (lp.cold_leads?.[0] as any)?.id }));
+                  const leadIds = items.map((i: any) => i.leadId).filter(Boolean) as string[];
                   if (leadIds.length > 0) {
                     bulkRegenerateMutation.mutate(leadIds);
                   }
@@ -3890,8 +3889,8 @@ const MarketingDemosTab = ({
                 onClick={() => {
                   if (confirm(`Delete ${selectedRows.size} selected items?`)) {
                     const items = filteredData
-                      .filter(lp => selectedRows.has(lp.id))
-                      .map(lp => ({ projectId: lp.id, leadId: (lp.cold_leads?.[0] as any)?.id }));
+                      .filter((lp: any) => selectedRows.has(lp.id))
+                      .map((lp: any) => ({ projectId: lp.id, leadId: (lp.cold_leads?.[0] as any)?.id }));
                     bulkDeleteMutation.mutate(items);
                   }
                 }}
@@ -3918,10 +3917,10 @@ const MarketingDemosTab = ({
             <input
               type="checkbox"
               className="h-3 w-3 rounded border-border text-rose-600 focus:ring-rose-500"
-              checked={filteredData.length > 0 && filteredData.every(lp => selectedRows.has(lp.id))}
+              checked={filteredData.length > 0 && filteredData.every((lp: any) => selectedRows.has(lp.id))}
               onChange={(e) => {
                 if (e.target.checked) {
-                  setSelectedRows(new Set(filteredData.map(lp => lp.id)));
+                  setSelectedRows(new Set(filteredData.map((lp: any) => lp.id)));
                 } else {
                   setSelectedRows(new Set());
                 }
@@ -3962,7 +3961,7 @@ const MarketingDemosTab = ({
 
         {/* Rows */}
         <div>
-          {filteredData.map((lp) => {
+          {filteredData.map((lp: any) => {
             const lead = (lp.cold_leads?.[0] || {}) as any;
             const isExpanded = expandedRows.has(lp.id);
             const displayName = lead.name || lp.agent_name || '—';
@@ -4030,7 +4029,7 @@ const MarketingDemosTab = ({
                     <div className="flex items-center gap-1.5 truncate">
                       <span className="text-[10px] text-muted-foreground truncate">{displayEmail}</span>
                       {(lead.zerobounce || lead.valid) && (
-                        <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" title="Verified Email" />
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
                       )}
                     </div>
                     <SegmentBadge segment={lead.experience_segment} />
