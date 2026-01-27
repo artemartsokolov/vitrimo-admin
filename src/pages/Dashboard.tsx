@@ -12,7 +12,7 @@ import { CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { Building2, ExternalLink, Mail, Search, Eye, LayoutDashboard, Settings, Code, RotateCcw, Menu, ChevronRight, ChevronDown, AlertCircle, Activity, ShieldAlert, Wrench, CheckCircle2, XCircle, Trash2, RefreshCw, User, Phone, X } from 'lucide-react';
+import { Building2, ExternalLink, Mail, Search, Eye, LayoutDashboard, Settings, Code, RotateCcw, Menu, ChevronRight, ChevronLeft, ChevronDown, AlertCircle, Activity, ShieldAlert, Wrench, CheckCircle2, XCircle, Trash2, RefreshCw, User, Phone, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { ActivityTrendsChart } from '@/components/ActivityTrendsChart';
@@ -156,18 +156,20 @@ const StatCard = ({ label, value, helper }: { label: string; value: string | num
   </Card>
 );
 
-const NavItem = ({ icon: Icon, label, active, onClick }: { icon: any; label: string; active: boolean; onClick: () => void }) => (
+const NavItem = ({ icon: Icon, label, active, onClick, isCollapsed }: { icon: any; label: string; active: boolean; onClick: () => void; isCollapsed?: boolean }) => (
   <button
     onClick={onClick}
+    title={isCollapsed ? label : undefined}
     className={cn(
       "w-full flex items-center gap-2.5 px-3 py-1.5 rounded-md transition-colors text-sm",
+      isCollapsed && "justify-center px-2",
       active
         ? "bg-sidebar-accent text-foreground"
         : "text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/50"
     )}
   >
-    <Icon className={cn("h-4 w-4", active ? "text-foreground" : "text-sidebar-foreground")} />
-    <span>{label}</span>
+    <Icon className={cn("h-4 w-4 flex-shrink-0", active ? "text-foreground" : "text-sidebar-foreground")} />
+    {!isCollapsed && <span>{label}</span>}
   </button>
 );
 
@@ -1789,6 +1791,7 @@ const OutreachDashboard = () => {
   const [selectedMobileSender, setSelectedMobileSender] = useState<any>(null);
   const [testEmailOpen, setTestEmailOpen] = useState(false);
   const [testEmailData, setTestEmailData] = useState<{ subject?: string, body?: string }>({});
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
@@ -2136,61 +2139,86 @@ const OutreachDashboard = () => {
   return (
     <div className="flex min-h-screen w-full bg-background">
       {/* Sidebar - Left (hidden on mobile) */}
-      <aside className="hidden md:flex w-60 flex-shrink-0 bg-sidebar flex-col sticky top-0 h-screen overflow-y-auto">
-        {/* Logo/Title */}
-        <div className="h-12 flex items-center px-4">
-          <span className="font-semibold text-foreground">Vitrimo Admin</span>
+      <aside className={cn(
+        "hidden md:flex flex-shrink-0 bg-sidebar flex-col sticky top-0 h-screen overflow-y-auto transition-all duration-200",
+        sidebarCollapsed ? "w-14" : "w-60"
+      )}>
+        {/* Logo/Title + Toggle */}
+        <div className="h-12 flex items-center justify-between px-3">
+          {!sidebarCollapsed && <span className="font-semibold text-foreground">Vitrimo Admin</span>}
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="p-1.5 rounded-md hover:bg-sidebar-accent transition-colors text-sidebar-foreground hover:text-foreground"
+            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {sidebarCollapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </button>
         </div>
 
-        <div className="p-3 flex-1">
+        <div className={cn("p-3 flex-1", sidebarCollapsed && "px-2")}>
           <nav className="space-y-0.5">
             <NavItem
               icon={LayoutDashboard}
               label="Overview"
               active={activeView === 'overview'}
               onClick={() => setActiveView('overview')}
+              isCollapsed={sidebarCollapsed}
             />
             <NavItem
               icon={Settings}
               label="Sender settings"
               active={activeView === 'settings'}
               onClick={() => setActiveView('settings')}
+              isCollapsed={sidebarCollapsed}
             />
             <NavItem
               icon={Code}
               label="Prompts"
               active={activeView === 'prompts'}
               onClick={() => setActiveView('prompts')}
+              isCollapsed={sidebarCollapsed}
             />
             <NavItem
               icon={Building2}
               label="Marketing Demos"
               active={activeView === 'demos'}
               onClick={() => setActiveView('demos')}
+              isCollapsed={sidebarCollapsed}
             />
             <NavItem
               icon={Search}
               label="Scraper Control"
               active={activeView === 'scraper'}
               onClick={() => setActiveView('scraper')}
+              isCollapsed={sidebarCollapsed}
             />
             <NavItem
               icon={Phone}
               label="Voice Agents (ES)"
               active={activeView === 'calls'}
               onClick={() => setActiveView('calls')}
+              isCollapsed={sidebarCollapsed}
             />
           </nav>
         </div>
 
-        <div className="p-3">
-          <div className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-sidebar-accent transition-colors">
+        <div className={cn("p-3", sidebarCollapsed && "px-2")}>
+          <div className={cn(
+            "flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-sidebar-accent transition-colors",
+            sidebarCollapsed && "justify-center px-0"
+          )}>
             <div className="h-7 w-7 rounded-full bg-primary/20 flex-shrink-0 flex items-center justify-center text-primary text-xs font-medium">
               {user?.email?.charAt(0).toUpperCase() || 'A'}
             </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs text-foreground truncate">{user?.email || 'Admin'}</span>
-            </div>
+            {!sidebarCollapsed && (
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs text-foreground truncate">{user?.email || 'Admin'}</span>
+              </div>
+            )}
           </div>
         </div>
       </aside>
