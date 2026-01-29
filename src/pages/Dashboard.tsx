@@ -16,6 +16,7 @@ import { Building2, ExternalLink, Mail, Search, Eye, LayoutDashboard, Settings, 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { ActivityTrendsChart } from '@/components/ActivityTrendsChart';
+import { LandingViewsAnalytics } from '@/components/LandingViewsAnalytics';
 
 type SenderStats = {
   email: string;
@@ -812,6 +813,9 @@ const MarketingPipelineStats = () => {
 
       {/* Activity Trends Chart */}
       <ActivityTrendsChart />
+
+      {/* Landing Views Analytics Table */}
+      <LandingViewsAnalytics />
 
       {/* Diagnostic Row: AI Agent Statuses */}
       {Object.keys(stats.statusCounts).length > 0 && (
