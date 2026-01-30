@@ -1,0 +1,21 @@
+[project]
+id = "your-project-id"
+name = "vitrimo-admin"
+
+[functions]
+# Verify JWT for all functions
+verify_jwt = true
+
+[functions.scrape-trends]
+# Scrape real estate trends from Instagram/TikTok
+# Runs via pg_cron daily or manually
+verify_jwt = false
+
+[functions.generate-scripts]
+# Generate AI scripts for trends
+# Called automatically by scrape-trends or manually
+verify_jwt = false
+
+[functions.sync-instagram]
+# Sync Instagram profile metrics
+verify_jwt = true

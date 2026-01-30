@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 type DailyData = {
     emailsSent: number;
+    firstEmailsSent: number; // Only email1
     totalViews: number;
     uniqueViews: number;
     newLeads: number;
@@ -111,6 +112,7 @@ export const ActivityTrendsChart = () => {
                     const dayKey = date.toISOString().split('T')[0];
                     dailyData[dayKey] = {
                         emailsSent: 0,
+                        firstEmailsSent: 0,
                         totalViews: 0,
                         uniqueViews: 0,
                         newLeads: 0,
@@ -121,11 +123,14 @@ export const ActivityTrendsChart = () => {
                     };
                 }
 
-                // Count emails
+                // Count emails (all and first only)
                 (leadsEmailHistory || []).forEach((l: any) => {
                     if (l.email1_sent && l.email1_sent >= startDateStr) {
                         const dayKey = l.email1_sent.split('T')[0];
-                        if (dailyData[dayKey]) dailyData[dayKey].emailsSent++;
+                        if (dailyData[dayKey]) {
+                            dailyData[dayKey].emailsSent++;
+                            dailyData[dayKey].firstEmailsSent++; // First emails
+                        }
                     }
                     if (l.email2_sent && l.email2_sent >= startDateStr) {
                         const dayKey = l.email2_sent.split('T')[0];
@@ -188,14 +193,16 @@ export const ActivityTrendsChart = () => {
                         date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
                         rawDate: date,
                         emailsSent: data.emailsSent,
+                        firstEmailsSent: data.firstEmailsSent,
                         totalViews: data.totalViews,
                         uniqueViews: data.visitorIds.size,
                         newLeads: data.newLeads,
                         claimsClicked: data.claimsClicked,
                         registrations: data.registrations,
                         userProjects: data.userProjects,
-                        conversionRate: data.emailsSent > 0
-                            ? Math.round((data.totalViews / data.emailsSent) * 100)
+                        // Conversion based on first emails only
+                        conversionRate: data.firstEmailsSent > 0
+                            ? Math.round((data.totalViews / data.firstEmailsSent) * 100)
                             : 0
                     }))
                     .sort((a, b) => a.rawDate.localeCompare(b.rawDate));
@@ -398,11 +405,21 @@ export const ActivityTrendsChart = () => {
                                 <Line
                                     type="monotone"
                                     dataKey="emailsSent"
-                                    name="Emails Sent"
+                                    name="All Emails"
                                     stroke="#3b82f6"
                                     strokeWidth={2}
                                     dot={{ fill: '#3b82f6', strokeWidth: 0, r: 5 }}
                                     activeDot={{ r: 8, stroke: '#3b82f6', strokeWidth: 2 }}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="firstEmailsSent"
+                                    name="First Emails"
+                                    stroke="#60a5fa"
+                                    strokeWidth={2}
+                                    strokeDasharray="4 2"
+                                    dot={{ fill: '#60a5fa', strokeWidth: 0, r: 4 }}
+                                    activeDot={{ r: 6 }}
                                 />
                                 <Line
                                     type="monotone"

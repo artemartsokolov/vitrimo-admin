@@ -12,11 +12,12 @@ import { CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { Building2, ExternalLink, Mail, Search, Eye, LayoutDashboard, Settings, Code, RotateCcw, Menu, ChevronRight, ChevronLeft, ChevronDown, AlertCircle, Activity, ShieldAlert, Wrench, CheckCircle2, XCircle, Trash2, RefreshCw, User, Phone, X } from 'lucide-react';
+import { Building2, ExternalLink, Mail, Search, Eye, LayoutDashboard, Settings, Code, RotateCcw, Menu, ChevronRight, ChevronLeft, ChevronDown, AlertCircle, Activity, ShieldAlert, Wrench, CheckCircle2, XCircle, Trash2, RefreshCw, User, Phone, X, Play, Volume2, Send, Clock, Calendar, ThumbsUp, ThumbsDown, PhoneOff, MessageCircle, Video } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { ActivityTrendsChart } from '@/components/ActivityTrendsChart';
 import { LandingViewsAnalytics } from '@/components/LandingViewsAnalytics';
+import { ContentStudio } from '@/components/ContentStudio';
 
 type SenderStats = {
   email: string;
@@ -1359,7 +1360,7 @@ const CallsManager = () => {
     refetchInterval: 5000
   });
 
-  // 2. Fetch Active Queue
+  // 2. Fetch Active Queue (all non-completed)
   const { data: queueItems } = useQuery({
     queryKey: ['call-queue-active'],
     queryFn: async () => {
@@ -1375,7 +1376,27 @@ const CallsManager = () => {
     refetchInterval: 5000
   });
 
-  // 3. Fetch Call History
+  // 2.1 Fetch ALL scheduled calls for today (regardless of status)
+  const { data: scheduledToday } = useQuery({
+    queryKey: ['call-queue-scheduled-today'],
+    queryFn: async () => {
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
+
+      const { data, error } = await supabase
+        .from('call_queue')
+        .select('*')
+        .gte('next_attempt_at', startOfDay)
+        .lt('next_attempt_at', endOfDay)
+        .order('next_attempt_at', { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    refetchInterval: 5000
+  });
+
+  // 3. Fetch Call History with all available columns
   const { data: callHistory } = useQuery({
     queryKey: ['vapi-call-history'],
     queryFn: async () => {
@@ -1383,12 +1404,31 @@ const CallsManager = () => {
         .from('vapi_call_log')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(30);
       if (error) throw error;
       return data;
     },
     refetchInterval: 10000
   });
+
+  // Audio player state
+  const [playingCallId, setPlayingCallId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const handlePlayRecording = (callId: string, recordingUrl: string) => {
+    if (playingCallId === callId) {
+      audioRef.current?.pause();
+      setPlayingCallId(null);
+    } else {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      audioRef.current = new Audio(recordingUrl);
+      audioRef.current.play();
+      audioRef.current.onended = () => setPlayingCallId(null);
+      setPlayingCallId(callId);
+    }
+  };
 
   // Mutation to force-process queue
   const processQueueMutation = useMutation({
@@ -1676,9 +1716,87 @@ const CallsManager = () => {
       </div >
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Active Queue Column */}
+        {/* Scheduled Today + Active Queue Column */}
         <div className="lg:col-span-2 space-y-4">
-          <Card className="rounded-lg border border-border h-full">
+          {/* Scheduled Today - Detailed View */}
+          <Card className="rounded-lg border border-border">
+            <CardHeader className="py-3 px-4">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Scheduled Today
+                {scheduledToday && scheduledToday.length > 0 && (
+                  <Badge className="bg-primary/20 text-primary ml-2">{scheduledToday.length}</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {(!scheduledToday || scheduledToday.length === 0) ? (
+                <div className="text-xs text-muted-foreground text-center py-6">No calls scheduled for today</div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {scheduledToday.map((item: any) => (
+                    <div key={item.id} className="px-4 py-3 hover:bg-secondary/50">
+                      <div className="flex items-center justify-between mb-2">
+                        {/* Left: Agent Info */}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm text-foreground">{item.agent_name || 'Unknown'}</span>
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 bg-secondary/50 border-border text-muted-foreground">
+                              {item.phone}
+                            </Badge>
+                          </div>
+                          {(item.agency_name || item.location) && (
+                            <div className="text-[10px] text-muted-foreground mt-1 flex gap-2">
+                              {item.agency_name && <span>{item.agency_name}</span>}
+                              {item.agency_name && item.location && <span>•</span>}
+                              {item.location && <span>{item.location}</span>}
+                            </div>
+                          )}
+                          {/* Landing Page Link */}
+                          {item.landing_url && (
+                            <a
+                              href={item.landing_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] text-primary hover:underline mt-1 flex items-center gap-1"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              View Landing Page
+                            </a>
+                          )}
+                        </div>
+
+                        {/* Right: Time + Attempt */}
+                        <div className="text-right flex flex-col items-end gap-1">
+                          <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                            <Clock className="h-3.5 w-3.5 text-primary" />
+                            {new Date(item.next_attempt_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className={cn(
+                              "text-[9px] px-1.5 py-0 h-4",
+                              item.status === 'completed' ? "bg-emerald-500/20 text-emerald-400" :
+                                item.status === 'calling' ? "bg-amber-500/20 text-amber-400" :
+                                  item.status === 'exhausted' ? "bg-red-500/20 text-red-400" :
+                                    "bg-secondary text-muted-foreground"
+                            )}>
+                              {item.status}
+                            </Badge>
+                            <span className="text-[10px] text-muted-foreground">
+                              Attempt {item.attempt_count || 1}/{item.max_attempts || 3}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Active Call Queue */}
+          <Card className="rounded-lg border border-border">
             <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-medium">Active Call Queue</CardTitle>
               <div className="flex gap-2">
@@ -1704,7 +1822,7 @@ const CallsManager = () => {
             </CardHeader>
             <CardContent className="p-0">
               {(!queueItems || queueItems.length === 0) ? (
-                <div className="text-xs text-muted-foreground text-center py-8">Queue is empty</div>
+                <div className="text-xs text-muted-foreground text-center py-6">Queue is empty</div>
               ) : (
                 <div className="divide-y divide-border">
                   {queueItems.map((item: any) => (
@@ -1724,7 +1842,7 @@ const CallsManager = () => {
                       </div>
                       <div className="text-right">
                         <div className="text-[10px] font-medium text-muted-foreground">
-                          {new Date(item.next_attempt_at).toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
+                          {new Date(item.next_attempt_at).toLocaleString('ru-RU', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
                         </div>
                         <div className="mt-1">
                           <Badge className={cn(
@@ -1743,41 +1861,145 @@ const CallsManager = () => {
           </Card>
         </div>
 
-        {/* Call History Column */}
+        {/* Call History Column - Enhanced */}
         <div className="space-y-4">
           <Card className="rounded-lg border border-border h-full">
             <CardHeader className="py-3 px-4">
-              <CardTitle className="text-sm font-medium">Recent Calls</CardTitle>
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Phone className="h-4 w-4" />
+                Recent Calls
+              </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <ScrollArea className="h-[400px]">
+              <ScrollArea className="h-[500px]">
                 {(!callHistory || callHistory.length === 0) ? (
                   <div className="text-xs text-muted-foreground text-center py-8">No calls yet</div>
                 ) : (
                   <div className="divide-y divide-border">
-                    {callHistory.map((call: any) => (
-                      <div key={call.id} className="px-4 py-3 hover:bg-secondary/50">
-                        <div className="flex justify-between items-start mb-1">
-                          <span className="text-xs font-medium text-foreground">{call.agent_name}</span>
-                          <span className="text-[9px] text-muted-foreground">
-                            {new Date(call.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
+                    {callHistory.map((call: any) => {
+                      // Determine call outcome for display
+                      const isInterested = call.call_result === 'interested';
+                      const isBlacklisted = call.call_result === 'blacklisted';
+                      const isNoAnswer = call.call_result === 'no_answer' || call.status === 'no_answer';
+                      const needsLink = isInterested && !call.sms_sent;
+                      const linkSent = isInterested && call.sms_sent;
+
+                      return (
+                        <div key={call.id} className="px-4 py-3 hover:bg-secondary/50">
+                          {/* Header: Name + Time */}
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <span className="text-xs font-medium text-foreground">{call.agent_name}</span>
+                              {call.agent_phone && (
+                                <span className="text-[9px] text-muted-foreground ml-2">{call.agent_phone}</span>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <div className="text-[9px] text-muted-foreground">
+                                {new Date(call.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                              </div>
+                              <div className="text-[10px] font-medium text-foreground">
+                                {new Date(call.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Status Row with Call Result */}
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="outline" className={cn(
+                              "text-[8px] px-1.5 h-4 border-none",
+                              call.status === 'completed' ? "bg-emerald-500/20 text-emerald-400" :
+                                call.status === 'initiated' ? "bg-blue-500/20 text-blue-400" :
+                                  call.status === 'failed' ? "bg-red-500/20 text-red-400" :
+                                    "bg-secondary text-muted-foreground"
+                            )}>
+                              {call.status}
+                            </Badge>
+
+                            {/* Call Result Badge */}
+                            {call.call_result && (
+                              <Badge variant="outline" className={cn(
+                                "text-[8px] px-1.5 h-4 border-none flex items-center gap-1",
+                                isInterested ? "bg-emerald-500/20 text-emerald-400" :
+                                  isBlacklisted ? "bg-red-500/20 text-red-400" :
+                                    isNoAnswer ? "bg-amber-500/20 text-amber-400" :
+                                      "bg-secondary text-muted-foreground"
+                              )}>
+                                {isInterested && <ThumbsUp className="h-2.5 w-2.5" />}
+                                {isBlacklisted && <ThumbsDown className="h-2.5 w-2.5" />}
+                                {isNoAnswer && <PhoneOff className="h-2.5 w-2.5" />}
+                                {call.call_result}
+                              </Badge>
+                            )}
+
+                            {call.duration_seconds && (
+                              <span className="text-[9px] text-muted-foreground ml-auto">
+                                {Math.floor(call.duration_seconds / 60)}:{String(call.duration_seconds % 60).padStart(2, '0')}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Link Status - Important for business logic */}
+                          {
+                            isInterested && (
+                              <div className={cn(
+                                "flex items-center gap-1.5 text-[10px] px-2 py-1 rounded mb-2",
+                                linkSent ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
+                              )}>
+                                {linkSent ? (
+                                  <>
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    Link sent
+                                  </>
+                                ) : (
+                                  <>
+                                    <AlertCircle className="h-3 w-3" />
+                                    Need to send link!
+                                  </>
+                                )}
+                              </div>
+                            )
+                          }
+
+                          {/* Transcript Summary if available */}
+                          {
+                            call.transcript_summary && (
+                              <div className="text-[9px] text-muted-foreground bg-secondary/50 rounded p-2 mb-2 line-clamp-2">
+                                <MessageCircle className="h-2.5 w-2.5 inline mr-1" />
+                                {call.transcript_summary}
+                              </div>
+                            )
+                          }
+
+                          {/* Recording Button */}
+                          {
+                            call.recording_url && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className={cn(
+                                  "h-6 text-[10px] px-2 w-full",
+                                  playingCallId === call.id && "bg-primary/10 border-primary text-primary"
+                                )}
+                                onClick={() => handlePlayRecording(call.id, call.recording_url)}
+                              >
+                                {playingCallId === call.id ? (
+                                  <>
+                                    <Volume2 className="h-3 w-3 mr-1 animate-pulse" />
+                                    Playing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Play className="h-3 w-3 mr-1" />
+                                    Play Recording
+                                  </>
+                                )}
+                              </Button>
+                            )
+                          }
                         </div>
-                        <div className="flex items-center justify-between">
-                          <Badge variant="outline" className={cn(
-                            "text-[8px] px-1 h-3.5 border-none",
-                            call.status === 'completed' ? "bg-emerald-50 text-emerald-700" :
-                              call.status === 'initiated' ? "bg-blue-50 text-blue-700" :
-                                "bg-secondary text-muted-foreground"
-                          )}>
-                            {call.status}
-                          </Badge>
-                          {call.duration_seconds && (
-                            <span className="text-[9px] text-muted-foreground">{call.duration_seconds}s</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </ScrollArea>
@@ -2205,6 +2427,13 @@ const OutreachDashboard = () => {
               label="Voice Agents (ES)"
               active={activeView === 'calls'}
               onClick={() => setActiveView('calls')}
+              isCollapsed={sidebarCollapsed}
+            />
+            <NavItem
+              icon={Video}
+              label="Content Studio"
+              active={activeView === 'content'}
+              onClick={() => setActiveView('content')}
               isCollapsed={sidebarCollapsed}
             />
           </nav>
@@ -2644,6 +2873,7 @@ const OutreachDashboard = () => {
             />}
             {activeView === 'scraper' && <ScraperControl />}
             {activeView === 'calls' && <CallsManager />}
+            {activeView === 'content' && <ContentStudio />}
 
           </div>
         </div>
